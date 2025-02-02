@@ -18,7 +18,7 @@ return new class extends Migration
 			$table->unsignedBigInteger('id_pessoa')->index('id_pessoa');
 			$table->unsignedBigInteger('id_perfil')->index('id_perfil');
 			$table->enum('ativo', ['s', 'n'])->default('s')->index('ativo');
-			$table->dateTime('data_hora_criacao')->index('data_hora_criacao');
+			$table->dateTime('data_hora_criacao')->index('data_hora_criacao')->useCurrent();
 
 			$table->foreign('id_pessoa')->references('id')->on('pessoa');
 			$table->foreign('id_perfil')->references('id')->on('perfil');

@@ -16,7 +16,7 @@ return new class extends Migration
 			$table->unsignedBigInteger('id_pessoa')->index('id_pessoa');
 			$table->string('razao_social', 255);
 			$table->string('nome_fantasia', 255);
-			$table->string('cnpj', 11)->index('cnpj');
+			$table->string('cnpj', 14)->index('cnpj');
 
 			$table->foreign('id_pessoa')->references('id')->on('pessoa');
 		});

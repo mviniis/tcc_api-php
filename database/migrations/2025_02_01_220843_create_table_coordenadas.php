@@ -16,7 +16,7 @@ return new class extends Migration
 			$table->unsignedBigInteger('id_paciente')->index('id_paciente');
 			$table->string('longitude', 100)->index('longitude');
 			$table->string('latitude', 100)->index('latitude');
-			$table->dateTime('data_hora_criacao')->index('data_hora_criacao');
+			$table->dateTime('data_hora_criacao')->index('data_hora_criacao')->useCurrent();
 
 			$table->foreign('id_paciente')->references('id')->on('paciente');
 		});

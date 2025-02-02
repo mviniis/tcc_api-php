@@ -14,7 +14,7 @@ return new class extends Migration
 		Schema::create('planos', function (Blueprint $table) {
 			$table->increments('id');
 			$table->unsignedBigInteger('id_perfil')->index('id_perfil');
-			$table->float('preco', 2);
+			$table->decimal('preco', 10, 2);
 			$table->enum('disponivel', ['s', 'n'])->default('s')->index('disponivel');
 
 			$table->foreign('id_perfil')->references('id')->on('perfil');

@@ -18,7 +18,7 @@ return new class extends Migration
 			$table->string('nome', 150)->index('nome');
 			$table->enum('ativo', ['s', 'n'])->default('s')->index('ativo');
 			$table->integer('distancia_maxima');
-			$table->dateTime('data_hora_criacao')->index('data_hora_criacao');
+			$table->dateTime('data_hora_criacao')->index('data_hora_criacao')->useCurrent();
 
 			$table->foreign('id_paciente')->references('id')->on('paciente');
 		});
