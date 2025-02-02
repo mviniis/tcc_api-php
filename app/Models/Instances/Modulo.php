@@ -5,17 +5,19 @@ namespace App\Models\Instances;
 use App\Core\Database\InstanceInterface;
 
 /**
- * class Perfil
+ * class Modulo
  *
- * Classe responsável por representar a tabela 'perfil'
+ * Classe responsável por representar a tabela 'modulo'
  */
-class Perfil implements InstanceInterface {
+class Modulo implements InstanceInterface {
 	public $id;
+	public $idPai;
 	public $nome;
+	public $path;
+	public $icone;
 	public $ativo;
-	public $permitirRemocao;
 
-	public const NOME_TABELA = 'perfil';
+	public const NOME_TABELA = 'modulo';
 
 	/**
 	 * Método responsável por retornar o mapeamento de campos de dados vindos do banco de dados [campoClasse => campo_tabela]
@@ -23,10 +25,12 @@ class Perfil implements InstanceInterface {
 	 */
 	public function getSchema(): array {
 		return [
-			'id'    					=> 'id',
-			'nome'  					=> 'nome',
-			'ativo' 					=> 'ativo',
-			'permitirRemocao' => 'permitir_remocao'
+			'id'    => 'id',
+			'idPai' => 'id_pai',
+			'nome'  => 'nome',
+			'path'  => 'path',
+			'icone' => 'icone',
+			'ativo' => 'ativo',
 		];
 	}
 }
