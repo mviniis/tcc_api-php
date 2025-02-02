@@ -45,7 +45,7 @@ class Converter {
 	 * @return InstanceInterface
 	 */
 	public function arrayClassToObject(): InstanceInterface {
-		$mappedData = $this->mapKeys($this->arrayClass, $this->object->getSchema(), true);
+		$mappedData = $this->mapKeys($this->arrayClass, $this->object->getSchema(), 'class');
 		return $this->createObject($mappedData);
 	}
 
@@ -54,7 +54,7 @@ class Converter {
 	 * @return array
 	 */
 	public function arrayClassToArrayDb(): array {
-		return $this->mapKeys($this->arrayClass, $this->object->getSchema(), true);
+		return $this->mapKeys($this->arrayClass, $this->object->getSchema(), 'db');
 	}
 
 	/**
@@ -74,7 +74,7 @@ class Converter {
 	 */
 	public function arrayDbToArrayClass(): array {
 		$data = $this->convertToArray($this->arrayDb);
-		return $this->mapKeys($data, $this->object->getSchema(), false);
+		return $this->mapKeys($data, $this->object->getSchema(), 'class');
 	}
 
 	/**
