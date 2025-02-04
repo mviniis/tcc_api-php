@@ -14,9 +14,9 @@ return new class extends Migration
 		Schema::create('configuracao', function (Blueprint $table) {
 			$table->string('hash', 200)->primary(true)->autoIncrement();
 			$table->unsignedInteger('id_tipo')->index('id_tipo');
-			$table->string('titulo', 100);
-			$table->string('valor', 255);
-			$table->string('padrao', 255);
+			$table->string('titulo', 100)->index('titulo');
+			$table->longText('valor');
+			$table->longText('padrao');
 			$table->string('descricao', 255);
 
 			$table->foreign('id_tipo')->references('id')->on('tipo_configuracao');

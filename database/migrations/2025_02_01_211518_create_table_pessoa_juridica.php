@@ -14,8 +14,8 @@ return new class extends Migration
 		Schema::create('pessoa_juridica', function (Blueprint $table) {
 			$table->bigIncrements('id');
 			$table->unsignedBigInteger('id_pessoa')->index('id_pessoa');
-			$table->string('razao_social', 255);
-			$table->string('nome_fantasia', 255);
+			$table->string('razao_social', 255)->index('razao_social');
+			$table->string('nome_fantasia', 255)->index('nome_fantasia');
 			$table->string('cnpj', 14)->index('cnpj');
 
 			$table->foreign('id_pessoa')->references('id')->on('pessoa');

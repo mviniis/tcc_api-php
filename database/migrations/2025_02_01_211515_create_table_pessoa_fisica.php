@@ -14,7 +14,7 @@ return new class extends Migration
 		Schema::create('pessoa_fisica', function (Blueprint $table) {
 			$table->bigIncrements('id');
 			$table->unsignedBigInteger('id_pessoa')->index('id_pessoa');
-			$table->string('nome', 255);
+			$table->string('nome', 255)->index('nome');
 			$table->string('cpf', 11)->index('cpf');
 
 			$table->foreign('id_pessoa')->references('id')->on('pessoa');

@@ -13,7 +13,7 @@ return new class extends Migration
 	{
 		Schema::create('perfil', function (Blueprint $table) {
 			$table->bigIncrements('id');
-			$table->string('nome', 255);
+			$table->string('nome', 255)->index('nome');
 			$table->enum('ativo', ['s', 'n'])->default('s')->index('ativo');
 			$table->enum('permitir_remocao', ['s', 'n'])->default('s')->index('permitir_remocao');
 		});

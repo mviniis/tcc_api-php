@@ -14,6 +14,7 @@ return new class extends Migration
 		Schema::create('usuario', function (Blueprint $table) {
 			$table->bigIncrements('id');
 			$table->string('email', 255)->unique('email');
+			$table->text('senha')->fulltext('senha');
 			$table->string('icone', 50);
 			$table->unsignedBigInteger('id_pessoa')->index('id_pessoa');
 			$table->unsignedBigInteger('id_perfil')->index('id_perfil');
