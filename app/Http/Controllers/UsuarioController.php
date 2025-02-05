@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Core\Database\Converter;
 use Illuminate\Http\Request;
 use App\Models\Instances\Usuario;
-use App\Core\System\Configuration;
 use App\Core\Security\PasswordEncryptor;
+use App\Core\System\RenderDefaultException;
+use App\Exceptions\ApiValidationException;
 use App\Http\Requests\Usuario\CadastroRequest;
 use App\Models\Rules\Usuarios\Api\ListagemUsuarios;
 use App\Models\Repository\{UsuarioRepository, Pessoa\PessoaRepository};
@@ -50,11 +51,7 @@ class UsuarioController extends Controller {
 			PessoaRepository::remover($obPessoa);
 			UsuarioRepository::remover($obUsuario);
 
-			$codigo               = $th->getCode();
-			$response['sucesso']  = $th->getMessage();
-			$response['mensagem'] = $th->getMessage();
-
-			if(Configuration::permitirDebug()) $response['trace'] = $th->getTrace();
+			$response = RenderDefaultException::render($th, $codigo);
 		}
 
 		return response()->json($response, $codigo);
@@ -63,9 +60,34 @@ class UsuarioController extends Controller {
 	/**
 	 * Display the specified resource.
 	 */
-	public function show(string $id)
-	{
-		//
+	public function show(string $id) {
+		$codigo    = 200;
+		$response  = [];
+		$obPessoa  = null;
+		$obUsuario = null;
+
+		try {
+			if(!is_numeric($id)) {
+				throw new ApiValidationException('O ID de usuário informado deve ser numérico!');
+			}
+
+			$obUsuario = UsuarioRepository::getUsuarioPorId($id);
+			if(!is_numeric($obUsuario->id)) {
+				throw new ApiValidationException("O usuário com ID '{$id}', não foi encontrado.", code: 404);
+			}
+
+			// BUSCA OS DADOS PESSOAIS DO USUÁRIO
+			$obPessoa = PessoaRepository::getPessoaPorId($obUsuario->idPessoa);
+
+			// MONTA A RESPONSE
+			$response['status']  = true;
+			$response['message'] = "Usuário encontrado!";
+			$response['usuario'] = $this->montarResponseUsuario($obUsuario, $obPessoa);
+		} catch(\Throwable $th) {
+			$response = RenderDefaultException::render($th, $codigo);
+		}
+
+		return response()->json($response, $codigo);
 	}
 
 	/**

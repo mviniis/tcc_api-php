@@ -49,4 +49,14 @@ class UsuarioRepository {
 
 		return DB::table(Usuario::NOME_TABELA)->delete($obUsuario->id) > 0;
 	}
+
+	/**
+	 * Método responsável por consultar um usário pelo seu ID
+	 * @param  int 			$id 			ID do usuário consultado
+	 * @return Usuario
+	 */
+	public static function getUsuarioPorId(int $id): Usuario {
+		$dados = DB::table(Usuario::NOME_TABELA)->where('id', '=', $id)->get()->first() ?? [];
+		return (new Converter(new Usuario, arrayDb: $dados))->arrayDbToObject();
+	}
 }

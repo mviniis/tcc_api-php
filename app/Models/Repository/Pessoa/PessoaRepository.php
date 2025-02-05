@@ -2,6 +2,7 @@
 
 namespace App\Models\Repository\Pessoa;
 
+use App\Core\Database\Converter;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\ActionRepositoryException as Exception;
 use App\Models\Repository\Pessoa\{PessoaFisicaRepository, PessoaJuridicaRepository};
@@ -78,5 +79,41 @@ class PessoaRepository {
 
 		// REMOVE OS DADOS DE VÍNCULO
 		return self::removerPessoa($obPessoa->id);
+	}
+
+	/**
+	 * Método responsável por buscar os dados de uma pessoa pelo seu ID
+	 * @param  int 			$id 			ID da pessoa consultada
+	 * @return Pessoa|PessoaFisica|PessoaJuridica
+	 */
+	public static function getPessoaPorId(int $id): object {
+		$tabelaP  = Pessoa::NOME_TABELA;
+		$tabelaPf = PessoaFisica::NOME_TABELA;
+		$tabelaPj = PessoaJuridica::NOME_TABELA;
+
+		// MONTA A QUERY
+		$db = DB::table($tabelaP)->where("{$tabelaP}.id", "=", $id);
+
+		// JOINS
+		$db->leftJoin($tabelaPf, "{$tabelaPf}.id_pessoa", "=", "{$tabelaP}.id")
+			 ->leftJoin($tabelaPj, "{$tabelaPj}.id_pessoa", "=", "{$tabelaP}.id");
+
+		// CAMPOS RETORNADOS
+		$campos = [
+			"IFNULL({$tabelaPf}.id, {$tabelaPj}.id) as id",
+			"{$tabelaP}.id as id_pessoa",
+			"{$tabelaPf}.nome", "{$tabelaPf}.cpf",
+			"{$tabelaPj}.razao_social", "{$tabelaPj}.nome_fantasia", "{$tabelaPj}.cnpj"
+		];
+		foreach($campos as $campo) $db->selectRaw($campo);
+
+		// CONSULTA DOS DADOS
+		$dados = $db->get()->first() ?? [];
+
+		// REALIZA A CONVERSÃO DOS DADOS
+		$obPessoa = new Pessoa;
+		if(!empty($dados)) $obPessoa = isset($dados->cpf) ? new PessoaFisica: new PessoaJuridica;
+
+		return (new Converter($obPessoa, arrayDb: $dados, validos: true))->arrayDbToObject();
 	}
 }

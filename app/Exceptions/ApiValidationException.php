@@ -14,9 +14,10 @@ class ApiValidationException extends Exception {
 	 * Construtor da classe de exceção
 	 * @param string 			$message 			Mensagem de exceção
 	 * @param array  			$details			Detalhes da exceção
+	 * @param int    			$code		    	Código HTTP de erro
 	 */
-	public function __construct(string $message = '', private array $details = []) {
-		parent::__construct($message, 400);
+	public function __construct(string $message = '', private array $details = [], int $code = 400) {
+		parent::__construct($message, $code);
 	}
 
 	public function render() {

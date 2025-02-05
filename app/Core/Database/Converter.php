@@ -14,14 +14,16 @@ use stdClass;
 class Converter {
 	/**
 	 * Construtor da classe
-	 * @param InstanceInterface  $object	  			Objeto base que será usado para conversão (com ou sem dados)
-	 * @param array 			    $arrayClass 		Dados com os índices formatados para classe
-	 * @param array|object 	    $arrayDb	  		Dados com os índices formatados para banco
+	 * @param InstanceInterface 	$object	  			Objeto base que será usado para conversão (com ou sem dados)
+	 * @param array 			      	$arrayClass 		Dados com os índices formatados para classe
+	 * @param array|object 	    	$arrayDb	  		Dados com os índices formatados para banco
+	 * @param array|object 	    	$validos	  		Retorna os dados somente dos campos da classe
 	 */
 	public function __construct(
 		private ?InstanceInterface $object = null,
 		private array $arrayClass = [],
-		private array|object $arrayDb = []
+		private array|object $arrayDb = [],
+		private bool $validos = false
 	) {}
 
 	/**
@@ -178,11 +180,15 @@ class Converter {
 	private function setProperty(object $object, string $property, mixed $value): void {
 		$reflection = new ReflectionClass($object);
 
-		if ($reflection->hasProperty($property)) {
+		// VERIFICA SE O CAMPO EXISTE
+		if($reflection->hasProperty($property)) {
 			$prop = $reflection->getProperty($property);
 			$prop->setAccessible(true);
 			$prop->setValue($object, $value);
-		} else {
+		}
+
+		// VERIFICA SE SOMENTE OS CAMPOS VÁLIDOS SERÃO RETORNADOS
+		if(!$reflection->hasProperty($property) && !$this->validos) {
 			$object->$property = $value;
 		}
 	}
