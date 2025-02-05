@@ -36,10 +36,13 @@ class ListagemUsuarios extends ValidateRequest {
 		$total = $this->db->count(['usuario.id']);
 
 		// ADICIONA AS CONDIÇÕES DE LIMITES E PAGINAÇÕES
-		$this->addLimitAndPagination()->addOrder();
+		$this->defineFields()->addLimitAndPagination()->addOrder();
 
 		// BUSCA OS USUÁRIOS DA LISTAGEM
 		$usuarios = (new Converter((new Usuario)))->listArrayDbToListArrayClass($this->db->get()->all());
+
+		// FORMATAÇÃO DE DADOS
+		foreach($usuarios as &$usuario) $usuario['ativo'] = $usuario['ativo'] == 's';
 
 		return [
 			'usuarios'  => $usuarios,
