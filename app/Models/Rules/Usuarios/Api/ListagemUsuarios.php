@@ -78,6 +78,9 @@ class ListagemUsuarios extends ValidateRequest {
 		$limit  = $this->request['ipp'] ?? 10;
 		$offset = $this->request['page'] ?? 0;
 
+		// AJUSTA O VALOR DO OFFSET
+		$offset = $limit * $offset;
+
 		$this->db->limit($limit)->offset($offset);
 
 		return $this;

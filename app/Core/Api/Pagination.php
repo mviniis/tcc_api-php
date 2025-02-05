@@ -58,7 +58,7 @@ class Pagination {
 		$this->paginacao['exibindo'] 			 = $this->itens;
 
 		// PROCESSA A QUANTIDADE DE PÁGINAS
-		$paginas 										= ($this->total < $this->ipp) ? 1: round($this->total / $this->ipp);
+		$paginas 										= ($this->total < $this->ipp) ? 1: ceil($this->total / $this->ipp);
 		$this->paginacao['paginas'] = $paginas;
 
 		// EVITA ERROS DE EXIBIÇÃO DA PÁGINA ATIVA
