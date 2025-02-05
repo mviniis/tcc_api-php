@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Core\Database\Converter;
 use Illuminate\Http\Request;
+use App\Core\Api\ResponseApi;
+use App\Core\Database\Converter;
 use App\Models\Instances\Usuario;
 use App\Core\Security\PasswordEncryptor;
-use App\Core\System\RenderDefaultException;
 use App\Exceptions\ApiValidationException;
+use App\Core\System\RenderDefaultException;
 use App\Http\Requests\Usuario\CadastroRequest;
 use App\Models\Rules\Usuarios\Api\ListagemUsuarios;
 use App\Models\Repository\{UsuarioRepository, Pessoa\PessoaRepository};
@@ -25,7 +26,7 @@ class UsuarioController extends Controller {
 	 */
 	public function index(Request $request) {
 		$obListagem = (new ListagemUsuarios($request->all()));
-		return response()->json($obListagem->listar());
+		return ResponseApi::render(conteudo: $obListagem->listar(), codigo: 200);
 	}
 
 	/**
@@ -35,34 +36,30 @@ class UsuarioController extends Controller {
 		$dados     = $request->validated();
 		$obPessoa  = null;
 		$obUsuario = null;
-		$response  = [ 'sucesso' => true, 'mensagem' => '' ];
-		$codigo    = 201;
 
 		try {
 			$obPessoa  = PessoaRepository::cadastrar($this->obterObjetoPessoa($dados));
 			$obUsuario = UsuarioRepository::cadastrar($this->obterObjetoUsuario($dados), $obPessoa);
 
 			// MONTA A RESPONSE
-			$response['mensagem'] = 'Usuário cadastrado com sucesso!';
+			$mensagem = 'Usuário cadastrado com sucesso!';
+			$conteudo = $this->montarResponseUsuario($obUsuario, $obPessoa);
 
-			// DADOS DO NOVO USUÁRIO
-			$response['usuario'] = $this->montarResponseUsuario($obUsuario, $obPessoa);
+			return ResponseApi::render(
+				sucesso: true, mensagem: $mensagem, conteudo: $conteudo, indice: 'usuario'
+			);
 		} catch(\Throwable $th) {
 			PessoaRepository::remover($obPessoa);
 			UsuarioRepository::remover($obUsuario);
 
-			$response = RenderDefaultException::render($th, $codigo);
+			return RenderDefaultException::render($th);
 		}
-
-		return response()->json($response, $codigo);
 	}
 
 	/**
 	 * Display the specified resource.
 	 */
 	public function show(string $id) {
-		$codigo    = 200;
-		$response  = [];
 		$obPessoa  = null;
 		$obUsuario = null;
 
@@ -80,14 +77,16 @@ class UsuarioController extends Controller {
 			$obPessoa = PessoaRepository::getPessoaPorId($obUsuario->idPessoa);
 
 			// MONTA A RESPONSE
-			$response['status']  = true;
-			$response['message'] = "Usuário encontrado!";
-			$response['usuario'] = $this->montarResponseUsuario($obUsuario, $obPessoa);
-		} catch(\Throwable $th) {
-			$response = RenderDefaultException::render($th, $codigo);
-		}
+			$mensagem = "Usuário encontrado!";
+			$conteudo = $this->montarResponseUsuario($obUsuario, $obPessoa);
 
-		return response()->json($response, $codigo);
+			return ResponseApi::render(
+				sucesso: true, mensagem: $mensagem, codigo: 200,
+				conteudo: $conteudo, indice: 'usuario'
+			);
+		} catch(\Throwable $th) {
+			return RenderDefaultException::render($th);
+		}
 	}
 
 	/**

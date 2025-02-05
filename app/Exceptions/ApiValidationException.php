@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Core\Api\ResponseApi;
 use Exception;
 
 /**
@@ -21,13 +22,14 @@ class ApiValidationException extends Exception {
 	}
 
 	public function render() {
-		$response = [
-			'titulo' => "Requisição inválida!",
-			'mensagem' => $this->getMessage()
+		$detalhes = [
+			'motivo' => $this->getMessage()
 		];
 
-		if(!empty($this->details)) $response['details'] = $this->details;
+		if(!empty($this->details)) $detalhes['infos'] = $this->details;
 
-		return response()->json($response, $this->getCode());
+		return ResponseApi::render(
+			mensagem: 'Requisição inválida!', codigo: $this->getCode(), detalhes: $detalhes
+		);
 	}
 }

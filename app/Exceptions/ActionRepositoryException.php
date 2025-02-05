@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Core\Api\ResponseApi;
 use App\Core\System\Configuration;
 use Exception;
 
@@ -21,13 +22,16 @@ class ActionRepositoryException extends Exception {
 	}
 
 	public function render() {
-		$response = [
-			'mensagem' => $this->getMessage(),
-			'status'   => false
-		];
+		$indice    = null;
+		$backtrace = null;
+		if(Configuration::permitirDebug()) {
+			$indice    = 'backtrace';
+			$backtrace = $this->getTrace();
+		}
 
-		if(Configuration::permitirDebug()) $response['backtrace'] = $this->getTrace();
-
-		return response()->json($response, $this->getCode());
+		return ResponseApi::render(
+			sucesso: false, mensagem: $this->getMessage(), indice: $indice,
+			conteudo: $backtrace, codigo: $this->getCode()
+		);
 	}
 }
