@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Core\Database\Converter;
 use Illuminate\Http\Request;
-use App\Exceptions\ApiValidationException;
+use App\Models\Instances\Usuario;
+use App\Core\System\Configuration;
+use App\Core\Security\PasswordEncryptor;
+use App\Http\Requests\Usuario\CadastroRequest;
 use App\Models\Rules\Usuarios\Api\ListagemUsuarios;
-use Illuminate\Support\Facades\DB;
+use App\Models\Repository\{UsuarioRepository, Pessoa\PessoaRepository};
+use App\Models\Instances\Pessoa\{PessoaInterface as Pessoa, PessoaFisica, PessoaInterface, PessoaJuridica};
 
 /**
  * class UsuarioController
@@ -25,9 +30,34 @@ class UsuarioController extends Controller {
 	/**
 	 * Store a newly created resource in storage.
 	 */
-	public function store(Request $request)
-	{
-		//
+	public function store(CadastroRequest $request) {
+		$dados     = $request->validated();
+		$obPessoa  = null;
+		$obUsuario = null;
+		$response  = [ 'sucesso' => true, 'mensagem' => '' ];
+		$codigo    = 201;
+
+		try {
+			$obPessoa  = PessoaRepository::cadastrar($this->obterObjetoPessoa($dados));
+			$obUsuario = UsuarioRepository::cadastrar($this->obterObjetoUsuario($dados), $obPessoa);
+
+			// MONTA A RESPONSE
+			$response['mensagem'] = 'Usuário cadastrado com sucesso!';
+
+			// DADOS DO NOVO USUÁRIO
+			$response['usuario'] = $this->montarResponseUsuario($obUsuario, $obPessoa);
+		} catch(\Throwable $th) {
+			PessoaRepository::remover($obPessoa);
+			UsuarioRepository::remover($obUsuario);
+
+			$codigo               = $th->getCode();
+			$response['sucesso']  = $th->getMessage();
+			$response['mensagem'] = $th->getMessage();
+
+			if(Configuration::permitirDebug()) $response['trace'] = $th->getTrace();
+		}
+
+		return response()->json($response, $codigo);
 	}
 
 	/**
@@ -56,5 +86,69 @@ class UsuarioController extends Controller {
 	public function destroy(string $id)
 	{
 		//
+	}
+
+	/**
+	 * Método responsável por converter os dados de uma pessoa enviados na request em objeto
+	 * @param  array 			$dados 			Dados enviados na requisição
+	 * @return Pessoa
+	 */
+	private function obterObjetoPessoa(array $dados): Pessoa {
+		$obPessoa = null;
+		switch($dados['tipoPessoa']) {
+			case 'fisica':
+				$obPessoa       = new PessoaFisica;
+				$obPessoa->nome = $dados['nome'];
+				$obPessoa->cpf  = $dados['cpf'];
+				break;
+
+			case 'juridica':
+				$obPessoa               = new PessoaJuridica;
+				$obPessoa->nomeFantasia = $dados['nomeFantasia'];
+				$obPessoa->razaoSocial  = $dados['razaoSocial'];
+				$obPessoa->cnpj         = $dados['cnpj'];
+				break;
+		}
+
+		return $obPessoa;
+	}
+
+	/**
+	 * Método responsável por converter os dados de usuário enviados na request em objeto
+	 * @param  array 			$dados 			Dados enviados na requisição
+	 * @return Usuario
+	 */
+	private function obterObjetoUsuario(array $dados): Usuario {
+		$obUsuario           = new Usuario;
+		$obUsuario->email    = $dados['email'];
+		$obUsuario->senha    = PasswordEncryptor::encrypt($dados['senha']);
+		$obUsuario->idPerfil = $dados['idPerfil'];
+		$obUsuario->icone    = '';
+		$obUsuario->ativo    = 's';
+		return $obUsuario;
+	}
+
+	/**
+	 * Método responsável por montar a response do usuário
+	 * @param  Usuario 													$obUsuario 			Objeto do usuário
+	 * @param  PessoaFisica|PessoaJuridica 			$obPessoa				Objeto dos dados pessoais do usuário
+	 * @return array
+	 */
+	private function montarResponseUsuario(Usuario $obUsuario, PessoaInterface $obPessoa): array {
+		$dados = array_merge(
+			(new Converter($obUsuario))->objectToArrayClass(),
+			(new Converter($obPessoa))->objectToArrayClass()
+		);
+
+		// CONVERSÃO DO CAMPO DE ATIVAÇÃO
+		$dados['ativo'] = $dados['ativo'] == 's';
+
+		// CORRIGE O ID DO USUÁRIO
+		$dados['id'] = $obUsuario->id;
+
+		// CAMPOS NÃO RETORNADOS
+		unset($dados['idPessoa'], $dados['senha']);
+
+		return $dados;
 	}
 }

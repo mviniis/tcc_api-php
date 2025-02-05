@@ -12,6 +12,7 @@ use App\Core\Database\InstanceInterface;
 class Usuario implements InstanceInterface {
 	public $id;
 	public $email;
+	public $senha;
 	public $icone;
 	public $idPessoa;
 	public $idPerfil;
@@ -28,6 +29,7 @@ class Usuario implements InstanceInterface {
 		return [
 			'id'              => 'id',
 			'email'           => 'email',
+			'senha'           => 'senha',
 			'icone'           => 'icone',
 			'idPessoa'        => 'id_pessoa',
 			'idPerfil'        => 'id_perfil',

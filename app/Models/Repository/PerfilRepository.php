@@ -24,6 +24,16 @@ class PerfilRepository {
 	}
 
 	/**
+	 * Método responsável por retornar os perfis disponíveis
+	 * @param  array 			$campos 			Campos que serão retornados na requisição
+	 * @return Perfil[]
+	 */
+	public function getPerfisDisponiveis(array $campos = ['*']): array {
+		$perfis = DB::table(Perfil::NOME_TABELA)->where('ativo', '=', 's')->get($campos)->all();
+		return (new Converter((new Perfil)))->listArrayDbToListObject($perfis);
+	}
+
+	/**
 	 * Método responsável por realizar o cadastro completo de vários registros
 	 * @param  array 			$perfis 			Perfis que serão cadastrados
 	 * @return bool
