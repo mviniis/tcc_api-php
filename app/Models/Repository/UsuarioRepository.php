@@ -86,4 +86,13 @@ class UsuarioRepository {
 		$dados = DB::table(Usuario::NOME_TABELA)->where('id', '=', $id)->get($campos)->first() ?? [];
 		return (new Converter(new Usuario, arrayDb: $dados))->arrayDbToObject();
 	}
+
+	/**
+	 * Método responsável por verificar se um usuário existe
+	 * @param  int 			$id 			ID do usuário que está sendo verificado
+	 * @return bool
+	 */
+	public static function usuarioExiste(int $id): bool {
+		return DB::table(Usuario::NOME_TABELA)->where('id', '=', $id)->exists();
+	}
 }

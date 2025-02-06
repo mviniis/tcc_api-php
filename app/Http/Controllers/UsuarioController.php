@@ -7,6 +7,7 @@ use App\Core\Api\ResponseApi;
 use App\Core\Database\Converter;
 use App\Models\Instances\Usuario;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\AlterarRequest;
 use App\Core\Security\PasswordEncryptor;
 use App\Exceptions\ApiValidationException;
 use App\Core\System\RenderDefaultException;
@@ -96,12 +97,32 @@ class UsuarioController extends Controller {
 
 	/**
 	 * Método responsável por realizar a atualização de alguns dados de um usuário
-	 * @param  Request 			$request 			Dados da requisição de atualização
-	 * @param  string  			$id						ID do usuário que está sendo atualizado
+	 * @param  AlterarRequest 			$request 			Dados da requisição de atualização
+	 * @param  string  							$id						ID do usuário que está sendo atualizado
 	 * @return JsonResponse
 	 */
-	public function update(Request $request, string $id) {
-		//
+	public function update(AlterarRequest $request, string $id) {
+		$dados       = $request->validated();
+		$dados['id'] = $id;
+
+		try {
+			if(!UsuarioRepository::usuarioExiste($id)) {
+				throw new ApiValidationException(
+					message: "O usuário informado não foi encontrado!", code: 404
+				);
+			}
+
+			// REALIZA A ATUALIZAÇÃO
+			if(!UsuarioRepository::atualizar($this->obterObjetoUsuario($dados, false, false))) {
+				throw new ApiValidationException(
+					'Não foi possível atualizar o usuário. Tente novamente mais tarde'
+				);
+			}
+
+			return ResponseApi::render(codigo: 204);
+		} catch (\Throwable $th) {
+			return RenderDefaultException::render($th);
+		}
 	}
 
 	/**
@@ -172,25 +193,27 @@ class UsuarioController extends Controller {
 	 * Método responsável por converter os dados de usuário enviados na request em objeto
 	 * @param  array 			$dados 					Dados enviados na requisição
 	 * @param  bool       $cadastro 			Define se está retornando um objeto para o cadastro ou atualização
+	 * @param  bool       $consultar 			Define se será feita uma consulta de dados
 	 * @return Usuario
 	 */
-	private function obterObjetoUsuario(array $dados, bool $cadastro = true): Usuario {
+	private function obterObjetoUsuario(array $dados, bool $cadastro = true, bool $consultar = true): Usuario {
 		$obUsuario           = new Usuario;
-		$obUsuario->email    = $dados['email'];
-		$obUsuario->idPerfil = $dados['idPerfil'];
-		$obUsuario->icone    = '';
+		$obUsuario->email    = $dados['email'] ?? null;
+		$obUsuario->idPerfil = $dados['idPerfil'] ?? null;
+		$obUsuario->icone    = ($cadastro) ? '': ($dados['icone'] ?? null);
 
 		// SALVA O ID DO USUÁRIO
 		if(!$cadastro) $obUsuario->id = $dados['id'];
 
 		// STATUS DE ATIVAÇÃO DO USUÁRIO
-		$obUsuario->ativo = $cadastro ? 's': ($dados['ativo'] ?? null);
+		$obUsuario->ativo = 's';
+		if(!$cadastro && isset($dados['ativo'])) $obUsuario->ativo = $dados['ativo'] ? 's': 'n';
 
 		// SALVA A SENHA DO USUÁRIO
 		if(isset($dados['senha'])) $obUsuario->senha = PasswordEncryptor::encrypt($dados['senha']);
 
 		// OBTÉM O ID DA PESSOA CADASTRADA
-		if(!$cadastro) {
+		if(!$cadastro && $consultar) {
 			$obCadastrado = UsuarioRepository::getUsuarioPorId($obUsuario->id, ['id_pessoa', 'data_hora_criacao']);
 			$obUsuario->idPessoa        = $obCadastrado->idPessoa;
 			$obUsuario->dataHoraCriacao = $obCadastrado->dataHoraCriacao;
