@@ -43,22 +43,23 @@ class PessoaRepository {
 	/**
 	 * Método responsável por cadastrar os dados de uma pessoa
 	 * @param  PessoaFisica|PessoaJuridica 			$obPessoa 			Dados da pessoa a ser cadastrada
+	 * @param  bool                             $vincular       Define se deve criar o vínculo de pessoa
 	 * @throws ActionRepositoryException
 	 * @return Pessoa
 	 */
-	public static function cadastrar(PessoaInterface $obPessoa): PessoaInterface {
-		$idPessoa 					= self::novaPessoa();
-		$obPessoa->idPessoa = $idPessoa;
-
-		// REALIZA O CADASTRO
-		$objetoPf 		= self::objetoRepresentaPessoaFisica($obPessoa);
-		$idPessoaTipo = $objetoPf ? PessoaFisicaRepository::cadastrar($obPessoa)
-															: PessoaJuridicaRepository::cadastrar($obPessoa);
+	public static function cadastrar(PessoaInterface $obPessoa, bool $vincular = true): PessoaInterface {
+		$idPessoa = $vincular ? self::novaPessoa(): $obPessoa->idPessoa;
+		if($vincular) $obPessoa->idPessoa = $idPessoa;
 
 		// VERIFICA SE FOI POSSÍVEL CADASTRAR A NOVA PESSOA
 		if($idPessoa <= 0) {
 			throw new Exception('Não foi possível realizar o cadastro. Tente novamente mais tarde', 400);
 		}
+
+		// REALIZA O CADASTRO
+		$objetoPf 		= self::objetoRepresentaPessoaFisica($obPessoa);
+		$idPessoaTipo = $objetoPf ? PessoaFisicaRepository::cadastrar($obPessoa)
+															: PessoaJuridicaRepository::cadastrar($obPessoa);
 
 		// SALVA O ID DA NOVA PESSOA
 		$obPessoa->id = $idPessoaTipo;
@@ -66,19 +67,55 @@ class PessoaRepository {
 	}
 
 	/**
-	 * Método responsável por cadastrar os dados de uma pessoa
-	 * @param  PessoaFisica|PessoaJuridica 			$obPessoa 			Dados da pessoa a ser cadastrada
-	 * @return void
+	 * Método responsável por atualizar os dados de uma pessoa
+	 * @param  PessoaFisica|PessoaJuridica 			$obPessoaEnviada 			Dados enviados na requisição de atualização
+	 * @return PessoaFisica|PessoaJuridica
 	 */
-	public static function remover(PessoaInterface $obPessoa): bool {
-		if(!is_numeric($obPessoa->idPessoa)) return false;
+	public static function atualizar(PessoaInterface $obPessoaEnviada) {
+		$obPessoaCadastrada = self::getPessoaPorId($obPessoaEnviada->idPessoa);
+
+		// VALIDA QUAL O TIPO DE MANIPULAÇÃO DOS DADOS
+		$pessoaFisicaEnviada     = self::objetoRepresentaPessoaFisica($obPessoaEnviada);
+		$pessoaFisicaCadastrada  = self::objetoRepresentaPessoaFisica($obPessoaCadastrada);
+		$atualizarCadastroPessoa = $pessoaFisicaEnviada === $pessoaFisicaCadastrada;
+
+		// REALIZA A ATUALIZAÇÃO DOS DADOS DA PESSOA
+		if($atualizarCadastroPessoa) {
+			$obPessoaEnviada->id = $obPessoaCadastrada->id;
+			self::atualizarPorTipo($obPessoaEnviada);
+			return $obPessoaEnviada;
+		}
+
+		// REMOVE O CADASTRO DE TIPO DE PESSOA E CRIA O NOVO TIPO
+		self::remover($obPessoaCadastrada, false);
+		return self::cadastrar($obPessoaEnviada, false);
+	}
+
+	/**
+	 * Método responsável por realizar a chamada da atualização das pessoas
+	 * @param  PessoaInterface 			$obPessoa 			Dados da pessoa a ser atualizada
+	 * @return bool
+	 */
+	private static function atualizarPorTipo(PessoaInterface $obPessoa) {
+		return self::objetoRepresentaPessoaFisica($obPessoa) ? PessoaFisicaRepository::atualizar($obPessoa)
+																												 : PessoaJuridicaRepository::atualizar($obPessoa);
+	}
+
+	/**
+	 * Método responsável por cadastrar os dados de uma pessoa
+	 * @param  PessoaFisica|PessoaJuridica 			$obPessoa 			  Dados da pessoa a ser cadastrada
+	 * @param  bool 														$desvincular 			Define se irá desfazer o vínculo de pessoa
+	 * @return bool
+	 */
+	public static function remover(PessoaInterface $obPessoa, bool $desvincular = true): bool {
+		if(!is_numeric($obPessoa->id)) return false;
 
 		// REMOVE OS DADOS DA PESSOA
-		self::objetoRepresentaPessoaFisica($obPessoa) ? PessoaFisicaRepository::remover($obPessoa->idPessoa)
-																									: PessoaJuridicaRepository::remover($obPessoa->idPessoa);
+		self::objetoRepresentaPessoaFisica($obPessoa) ? PessoaFisicaRepository::remover($obPessoa->id)
+																									: PessoaJuridicaRepository::remover($obPessoa->id);
 
 		// REMOVE OS DADOS DE VÍNCULO
-		return self::removerPessoa($obPessoa->id);
+		return $desvincular ? self::removerPessoa($obPessoa->idPessoa): true;
 	}
 
 	/**

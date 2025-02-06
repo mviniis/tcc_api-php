@@ -11,8 +11,15 @@ use Illuminate\Contracts\Validation\ValidationRule;
  *
  * Classe responsável por validar um e-mail
  */
-class EmailRule implements ValidationRule
-{
+class EmailRule implements ValidationRule {
+	/**
+	 * Construtor da classe de regras de e-mails
+	 * @param int|null 			$idUsuario 			ID do usuário que está sendo validado
+	 */
+	public function __construct(
+		private ?int $idUsuario = null
+	) {}
+
 	/**
 	 * Run the validation rule.
 	 *
@@ -29,7 +36,7 @@ class EmailRule implements ValidationRule
 
 		// VERIFICA SE O E-MAIL NÃO É DUPLICADO
 		if($continue) {
-			if((new UsuarioRepository)->verificarEmailDuplicado($value)) {
+			if((new UsuarioRepository)->verificarEmailDuplicado($value, $this->idUsuario)) {
 				$fail("O e-mail informado é inválido");
 			}
 		}

@@ -15,11 +15,14 @@ use App\Models\Instances\Pessoa\{PessoaFisica, PessoaJuridica, PessoaInterface};
 class UsuarioRepository {
 	/**
 	 * Método responsável por verificar se um e-mail já existe no banco de dados
-	 * @param  string 			$email 			E-mail a ser verificado
+	 * @param  string 				$email 					E-mail a ser verificado
+	 * @param  int|null 			$idUsuario 			ID do usuário que deve ser desconsiderado
 	 * @return bool
 	 */
-	public function verificarEmailDuplicado(string $email): bool {
-		return DB::table(Usuario::NOME_TABELA)->where('email', '=', $email)->count('id') > 0;
+	public function verificarEmailDuplicado(string $email, ?int $idUsuario = null): bool {
+		$db = DB::table(Usuario::NOME_TABELA)->where('email', '=', $email);
+		if(!is_null($idUsuario)) $db->where('id', '!=', $idUsuario);
+		return $db->exists();
 	}
 
 	/**
@@ -40,6 +43,29 @@ class UsuarioRepository {
 	}
 
 	/**
+	 * Método responsável por realizar a atualização dos dados do usuário
+	 * @param  Usuario 			$obUsuario 			Dados do usuário que serão atualizados
+	 * @return bool
+	 */
+	public static function atualizar(Usuario $obUsuario): bool {
+		if(!is_numeric($obUsuario->id)) return false;
+
+		// EVITA REALIZAR A ATUALIZAÇÃO DE CAMPOS VAZIOS E DOS CAMPOS DE PESSOA
+		$dados = (new Converter($obUsuario))->objectToArrayDb();
+		foreach($dados as $campo => $valor) {
+			if(!is_null($valor) && strlen($valor)) continue;
+
+			unset($dados[$campo]);
+		}
+
+		// EVITA A ATUALIZAÇÃO DOS CAMPOS DE VINCULO COM PESSOA
+		unset($dados['id'], $dados['id_pessoa']);
+
+		$id = $obUsuario->id;
+		return DB::table(Usuario::NOME_TABELA)->where('id', '=', $id)->update($dados) > 0;
+	}
+
+	/**
 	 * Método responsável por remover os dados de um usuário
 	 * @param  Usuario 			$obUsuario 			Dados do usuário a ser removido
 	 * @return bool
@@ -52,11 +78,12 @@ class UsuarioRepository {
 
 	/**
 	 * Método responsável por consultar um usário pelo seu ID
-	 * @param  int 			$id 			ID do usuário consultado
+	 * @param  int 			  $id 			    ID do usuário consultado
+	 * @param  array 			$campos 			Campos que serão retornados
 	 * @return Usuario
 	 */
-	public static function getUsuarioPorId(int $id): Usuario {
-		$dados = DB::table(Usuario::NOME_TABELA)->where('id', '=', $id)->get()->first() ?? [];
+	public static function getUsuarioPorId(int $id, array $campos = ['*']): Usuario {
+		$dados = DB::table(Usuario::NOME_TABELA)->where('id', '=', $id)->get($campos)->first() ?? [];
 		return (new Converter(new Usuario, arrayDb: $dados))->arrayDbToObject();
 	}
 }
