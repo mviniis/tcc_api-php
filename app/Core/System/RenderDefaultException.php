@@ -22,12 +22,16 @@ abstract class RenderDefaultException {
 		$mensagem = $th->getMessage();
 
 		// MONTA O CÓDIGO DE ERRO
-		$codigo   = $th->getCode();
-		$detalhes = [];
-		if($codigo >= 600) {
+		$codigo           = $th->getCode();
+		$detalhes         = [];
+		$saoErrosInternos = $codigo >= 600 || $codigo < 100;
+		if($saoErrosInternos) {
 			if(Configuration::permitirDebug()) $detalhes['internalCode'] = $codigo;
 			$codigo = 500;
 		}
+
+		// EVITA MOSTRAR A MENSAGEM DE ERRO REAL EM PRODUÇÃO
+		if(Configuration::estaOnline()) $mensagem = 'Um erro interno impediu o processamento';
 
 		// ADICIONA O TRACE DE ERRO
 		if(Configuration::permitirDebug()) $detalhes['trace'] = $th->getTrace();
@@ -35,8 +39,6 @@ abstract class RenderDefaultException {
 		// NÃO RENDERIZA O CAMPO DETALHES QUANDO NÃO EXISTIR NENHUM CONTEÚDO
 		if(empty($detalhes)) $detalhes = null;
 
-		return ResponseApi::render(
-			sucesso: false, mensagem: $mensagem, codigo: $codigo, detalhes: $detalhes
-		);
+		return ResponseApi::render(mensagem: $mensagem, codigo: $codigo, detalhes: $detalhes);
 	}
 }

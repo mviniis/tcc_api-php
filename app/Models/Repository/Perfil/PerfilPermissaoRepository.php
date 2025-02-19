@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Models\Repository;
+namespace App\Models\Repository\Perfil;
 
 use App\Core\Database\Converter;
-use App\Models\Instances\PerfilPermissao;
+use App\Models\Instances\Perfil\PerfilPermissao;
 use Illuminate\Support\Facades\DB;
 
 /**

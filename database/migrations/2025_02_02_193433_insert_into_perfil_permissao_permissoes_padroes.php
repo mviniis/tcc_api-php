@@ -2,7 +2,7 @@
 
 use App\Exceptions\MigrationDmlException;
 use Illuminate\Database\Migrations\Migration;
-use App\Models\Repository\PerfilPermissaoRepository;
+use App\Models\Repository\Perfil\PerfilPermissaoRepository;
 
 return new class extends Migration
 {

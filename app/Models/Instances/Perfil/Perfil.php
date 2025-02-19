@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Instances;
+namespace App\Models\Instances\Perfil;
 
 use App\Core\Database\InstanceInterface;
 

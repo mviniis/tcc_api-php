@@ -3,7 +3,7 @@
 namespace App\Rules;
 
 use Closure;
-use App\Models\Repository\UsuarioRepository;
+use App\Models\Repository\Usuario\UsuarioRepository;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**

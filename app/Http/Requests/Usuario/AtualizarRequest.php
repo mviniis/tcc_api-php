@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Usuario;
 
 use App\Exceptions\ApiValidationException;
-use App\Models\Repository\UsuarioRepository;
+use App\Models\Repository\Usuario\UsuarioRepository;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Rules\{CnpjRule, CpfRule, EmailRule, PefilRule};

@@ -5,7 +5,7 @@ namespace App\Models\Rules\Usuarios\Api;
 use App\Core\Api\Pagination;
 use App\Core\Api\ValidateRequest;
 use App\Core\Database\Converter;
-use App\Models\Instances\Usuario;
+use App\Models\Instances\Usuario\Usuario;
 use Illuminate\Support\Facades\DB;
 
 /**

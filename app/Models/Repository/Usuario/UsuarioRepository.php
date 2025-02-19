@@ -1,10 +1,14 @@
 <?php
 
-namespace App\Models\Repository;
+namespace App\Models\Repository\Usuario;
 
 use App\Core\Database\Converter;
-use App\Models\Instances\Usuario;
 use Illuminate\Support\Facades\DB;
+use App\Models\Instances\Usuario\Usuario;
+use App\Models\Repository\Pessoa\PessoaRepository;
+use App\Models\Repository\Plano\PlanoUsuarioRepository;
+use App\Exceptions\ActionRepositoryException as Exception;
+use App\Models\Repository\Paciente\PacienteUsuarioRepository;
 use App\Models\Instances\Pessoa\{PessoaFisica, PessoaJuridica, PessoaInterface};
 
 /**
@@ -74,6 +78,35 @@ class UsuarioRepository {
 		if(!is_numeric($obUsuario->id)) return false;
 
 		return DB::table(Usuario::NOME_TABELA)->delete($obUsuario->id) > 0;
+	}
+
+	/**
+	 * Métod responsável por realizar a remoção de um usuário e de seus vínculos
+	 * @throws ActionRepositoryException
+	 * @return void
+	 */
+	public static function limpezaCompleta(Usuario $obUsuario): void {
+		if(is_null($obUsuario->id)) throw new Exception('Não foi possível realizar a limpeza do usuário.');
+
+		// VEERIFICA SE POSSUI VÍNCULOS COM OUTRAS TABELAS
+		$id                        = $obUsuario->id;
+		$exitemPacientesVinculados = PacienteUsuarioRepository::usuarioPossuiVinculosComPacientes($id);
+		$existemUsuariosVinculados = UsuarioResponsavelRepository::usuarioPossuiUsuariosVinculados($id);
+		if($exitemPacientesVinculados || $existemUsuariosVinculados) {
+			throw new Exception(
+				"Existem cadastros vinculados a esse usuário! Remova os vínculos para prosseguir.", 403
+			);
+		}
+
+		// BUSCA OS DADOS PESSOAIS DO USUÁRIO
+		$obPessoa = PessoaRepository::getPessoaPorId($obUsuario->idPessoa);
+
+		// REALIZA AS REMOÇÕES
+		UsuarioTipoMfaRepository::limparConfiguracoesMfaPorUsuario($obUsuario->id);
+		UsuarioResponsavelRepository::desvincularDeUsuariosPai($obUsuario->id);
+		PlanoUsuarioRepository::removerVinculoComUsuario($obUsuario->id);
+		self::remover($obUsuario);
+		PessoaRepository::remover($obPessoa);
 	}
 
 	/**

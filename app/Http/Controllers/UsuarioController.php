@@ -5,15 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Core\Api\ResponseApi;
 use App\Core\Database\Converter;
-use App\Models\Instances\Usuario;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\AlterarRequest;
 use App\Core\Security\PasswordEncryptor;
+use App\Models\Instances\Usuario\Usuario;
 use App\Exceptions\ApiValidationException;
 use App\Core\System\RenderDefaultException;
 use App\Models\Rules\Usuarios\Api\ListagemUsuarios;
 use App\Http\Requests\Usuario\{CadastroRequest, AtualizarRequest};
-use App\Models\Repository\{UsuarioRepository, Pessoa\PessoaRepository};
+use App\Models\Repository\{Usuario\UsuarioRepository, Pessoa\PessoaRepository};
 use App\Models\Instances\Pessoa\{PessoaInterface as Pessoa, PessoaFisica, PessoaInterface, PessoaJuridica};
 
 /**
@@ -161,7 +161,22 @@ class UsuarioController extends Controller {
 	 * @return JsonResposne
 	 */
 	public function destroy(string $id) {
-		//
+		try {
+			// VERIFICA A EXISTÊNCIA DO USUÁRIO
+			if(!is_numeric($id)) $id = 0;
+			if(!UsuarioRepository::usuarioExiste($id)) {
+				throw new ApiValidationException(
+					message: "O usuário informado não foi encontrado!", code: 404
+				);
+			}
+
+			// REALIZA AS REMOÇÕES
+			UsuarioRepository::limpezaCompleta($this->obterObjetoUsuario(['id' => $id], false));
+
+			return ResponseApi::render(codigo: 204);
+		} catch (\Throwable $th) {
+			return RenderDefaultException::render($th);
+		}
 	}
 
 	/**

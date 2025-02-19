@@ -1,7 +1,7 @@
 <?php
 
 use App\Exceptions\MigrationDmlException;
-use App\Models\Repository\PerfilRepository;
+use App\Models\Repository\Perfil\PerfilRepository;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
