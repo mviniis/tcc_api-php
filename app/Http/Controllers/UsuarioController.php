@@ -4,17 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Core\Api\ResponseApi;
-use App\Core\Database\Converter;
+use App\Facades\UsuarioFacade;
 use Illuminate\Http\JsonResponse;
-use App\Http\Requests\AlterarRequest;
-use App\Core\Security\PasswordEncryptor;
-use App\Models\Instances\Usuario\Usuario;
 use App\Exceptions\ApiValidationException;
 use App\Core\System\RenderDefaultException;
 use App\Models\Rules\Usuarios\Api\ListagemUsuarios;
-use App\Http\Requests\Usuario\{CadastroRequest, AtualizarRequest};
-use App\Models\Repository\{Usuario\UsuarioRepository, Pessoa\PessoaRepository};
-use App\Models\Instances\Pessoa\{PessoaInterface as Pessoa, PessoaFisica, PessoaInterface, PessoaJuridica};
+use App\Http\Requests\Usuario\{CadastroRequest, AtualizarRequest, AlterarRequest};
 
 /**
  * class UsuarioController
@@ -37,25 +32,18 @@ class UsuarioController extends Controller {
 	 * @return JsonResponse
 	 */
 	public function store(CadastroRequest $request) {
-		$dados     = $request->validated();
-		$obPessoa  = null;
-		$obUsuario = null;
+		$dados        = $request->validated();
+		$obUsuarioDTO = null;
 
 		try {
-			$obPessoa  = PessoaRepository::cadastrar($this->obterObjetoPessoa($dados));
-			$obUsuario = UsuarioRepository::cadastrar($this->obterObjetoUsuario($dados), $obPessoa);
-
-			// MONTA A RESPONSE
-			$mensagem = 'Usuário cadastrado com sucesso!';
-			$conteudo = $this->montarResponseUsuario($obUsuario, $obPessoa);
+			$mensagem 		= 'Usuário cadastrado com sucesso!';
+			$obUsuarioDTO = UsuarioFacade::novoUsuario($dados);
 
 			return ResponseApi::render(
-				sucesso: true, mensagem: $mensagem, conteudo: $conteudo, indice: 'usuario'
+				sucesso: true, mensagem: $mensagem, indice: 'usuario',
+				conteudo: UsuarioFacade::montarResponseCompletaUsuario($obUsuarioDTO)
 			);
 		} catch(\Throwable $th) {
-			PessoaRepository::remover($obPessoa);
-			UsuarioRepository::remover($obUsuario);
-
 			return RenderDefaultException::render($th);
 		}
 	}
@@ -66,25 +54,14 @@ class UsuarioController extends Controller {
 	 * @return JsonResponse
 	 */
 	public function show(string $id) {
-		$obPessoa  = null;
-		$obUsuario = null;
-
 		try {
 			if(!is_numeric($id)) {
 				throw new ApiValidationException('O ID de usuário informado deve ser numérico!');
 			}
 
-			$obUsuario = UsuarioRepository::getUsuarioPorId($id);
-			if(!is_numeric($obUsuario->id)) {
-				throw new ApiValidationException("O usuário com ID '{$id}', não foi encontrado.", code: 404);
-			}
-
-			// BUSCA OS DADOS PESSOAIS DO USUÁRIO
-			$obPessoa = PessoaRepository::getPessoaPorId($obUsuario->idPessoa);
-
 			// MONTA A RESPONSE
 			$mensagem = "Usuário encontrado!";
-			$conteudo = $this->montarResponseUsuario($obUsuario, $obPessoa);
+			$conteudo = UsuarioFacade::verUsuario($id);
 
 			return ResponseApi::render(
 				sucesso: true, mensagem: $mensagem, codigo: 200,
@@ -106,20 +83,14 @@ class UsuarioController extends Controller {
 		$dados['id'] = $id;
 
 		try {
-			if(!UsuarioRepository::usuarioExiste($id)) {
-				throw new ApiValidationException(
-					message: "O usuário informado não foi encontrado!", code: 404
-				);
-			}
+			// MONTA A RESPONSE
+			$mensagem = "Usuário alterado com sucesso!";
+			$conteudo = UsuarioFacade::alteracaoParcialUsuario($dados);
 
-			// REALIZA A ATUALIZAÇÃO
-			if(!UsuarioRepository::atualizar($this->obterObjetoUsuario($dados, false, false))) {
-				throw new ApiValidationException(
-					'Não foi possível atualizar o usuário. Tente novamente mais tarde'
-				);
-			}
-
-			return ResponseApi::render(codigo: 204);
+			return ResponseApi::render(
+				sucesso: true, mensagem: $mensagem, codigo: 200,
+				conteudo: $conteudo, indice: 'usuario'
+			);
 		} catch (\Throwable $th) {
 			return RenderDefaultException::render($th);
 		}
@@ -136,19 +107,9 @@ class UsuarioController extends Controller {
 		$dados       = $request->validated();
 		$dados['id'] = (int) $id;
 
-		$obPessoa  = $this->obterObjetoPessoa($dados);
-		$obUsuario = $this->obterObjetoUsuario($dados, false);
-
-		// SALVA O ID DA PESSOA
-		$obPessoa->idPessoa = $obUsuario->idPessoa;
-
-		// REALIZA AS ATUALIZAÇÕES
-		$obPessoa  = PessoaRepository::atualizar($obPessoa);
-		UsuarioRepository::atualizar($obUsuario);
-
 		// RESPONSE DA ATUALIZAÇÃO
 		$mensagem = 'Atualização do usuário efetuada com sucesso!';
-		$conteudo = $this->montarResponseUsuario($obUsuario, $obPessoa);
+		$conteudo = UsuarioFacade::atualizarUsuario($dados);
 
 		return ResponseApi::render(
 			sucesso: true, mensagem: $mensagem, conteudo: $conteudo, indice: 'usuario'
@@ -164,100 +125,12 @@ class UsuarioController extends Controller {
 		try {
 			// VERIFICA A EXISTÊNCIA DO USUÁRIO
 			if(!is_numeric($id)) $id = 0;
-			if(!UsuarioRepository::usuarioExiste($id)) {
-				throw new ApiValidationException(
-					message: "O usuário informado não foi encontrado!", code: 404
-				);
-			}
 
-			// REALIZA AS REMOÇÕES
-			UsuarioRepository::limpezaCompleta($this->obterObjetoUsuario(['id' => $id], false));
+			UsuarioFacade::removerUsuario($id);
 
 			return ResponseApi::render(codigo: 204);
 		} catch (\Throwable $th) {
 			return RenderDefaultException::render($th);
 		}
-	}
-
-	/**
-	 * Método responsável por converter os dados de uma pessoa enviados na request em objeto
-	 * @param  array 			$dados 			Dados enviados na requisição
-	 * @return Pessoa
-	 */
-	private function obterObjetoPessoa(array $dados): Pessoa {
-		$obPessoa = null;
-		switch($dados['tipoPessoa']) {
-			case 'fisica':
-				$obPessoa       = new PessoaFisica;
-				$obPessoa->nome = $dados['nome'];
-				$obPessoa->cpf  = $dados['cpf'];
-				break;
-
-			case 'juridica':
-				$obPessoa               = new PessoaJuridica;
-				$obPessoa->nomeFantasia = $dados['nomeFantasia'];
-				$obPessoa->razaoSocial  = $dados['razaoSocial'];
-				$obPessoa->cnpj         = $dados['cnpj'];
-				break;
-		}
-
-		return $obPessoa;
-	}
-
-	/**
-	 * Método responsável por converter os dados de usuário enviados na request em objeto
-	 * @param  array 			$dados 					Dados enviados na requisição
-	 * @param  bool       $cadastro 			Define se está retornando um objeto para o cadastro ou atualização
-	 * @param  bool       $consultar 			Define se será feita uma consulta de dados
-	 * @return Usuario
-	 */
-	private function obterObjetoUsuario(array $dados, bool $cadastro = true, bool $consultar = true): Usuario {
-		$obUsuario           = new Usuario;
-		$obUsuario->email    = $dados['email'] ?? null;
-		$obUsuario->idPerfil = $dados['idPerfil'] ?? null;
-		$obUsuario->icone    = ($cadastro) ? '': ($dados['icone'] ?? null);
-
-		// SALVA O ID DO USUÁRIO
-		if(!$cadastro) $obUsuario->id = $dados['id'];
-
-		// STATUS DE ATIVAÇÃO DO USUÁRIO
-		$obUsuario->ativo = 's';
-		if(!$cadastro && isset($dados['ativo'])) $obUsuario->ativo = $dados['ativo'] ? 's': 'n';
-
-		// SALVA A SENHA DO USUÁRIO
-		if(isset($dados['senha'])) $obUsuario->senha = PasswordEncryptor::encrypt($dados['senha']);
-
-		// OBTÉM O ID DA PESSOA CADASTRADA
-		if(!$cadastro && $consultar) {
-			$obCadastrado = UsuarioRepository::getUsuarioPorId($obUsuario->id, ['id_pessoa', 'data_hora_criacao']);
-			$obUsuario->idPessoa        = $obCadastrado->idPessoa;
-			$obUsuario->dataHoraCriacao = $obCadastrado->dataHoraCriacao;
-		}
-
-		return $obUsuario;
-	}
-
-	/**
-	 * Método responsável por montar a response do usuário
-	 * @param  Usuario 													$obUsuario 			Objeto do usuário
-	 * @param  PessoaFisica|PessoaJuridica 			$obPessoa				Objeto dos dados pessoais do usuário
-	 * @return array
-	 */
-	private function montarResponseUsuario(Usuario $obUsuario, PessoaInterface $obPessoa): array {
-		$dados = array_merge(
-			(new Converter($obUsuario))->objectToArrayClass(),
-			(new Converter($obPessoa))->objectToArrayClass()
-		);
-
-		// CONVERSÃO DO CAMPO DE ATIVAÇÃO
-		$dados['ativo'] = $dados['ativo'] == 's';
-
-		// CORRIGE O ID DO USUÁRIO
-		$dados['id'] = $obUsuario->id;
-
-		// CAMPOS NÃO RETORNADOS
-		unset($dados['idPessoa'], $dados['senha']);
-
-		return $dados;
 	}
 }

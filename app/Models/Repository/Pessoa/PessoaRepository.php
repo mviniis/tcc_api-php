@@ -36,7 +36,7 @@ class PessoaRepository {
 	 * @param  int 			$id 			ID da pessoa a ser removida
 	 * @return bool
 	 */
-	private static function removerPessoa(int $id): bool {
+	public static function removerPessoa(int $id): bool {
 		return DB::table(Pessoa::NOME_TABELA)->delete($id) > 0;
 	}
 
@@ -47,7 +47,7 @@ class PessoaRepository {
 	 * @throws ActionRepositoryException
 	 * @return Pessoa
 	 */
-	public static function cadastrar(PessoaInterface $obPessoa, bool $vincular = true): PessoaInterface {
+	public static function cadastrar(PessoaInterface &$obPessoa, bool $vincular = true): PessoaInterface {
 		$idPessoa = $vincular ? self::novaPessoa(): $obPessoa->idPessoa;
 		if($vincular) $obPessoa->idPessoa = $idPessoa;
 

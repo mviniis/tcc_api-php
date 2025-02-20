@@ -2,6 +2,7 @@
 
 namespace App\Models\Repository\Usuario;
 
+use App\Models\DTOs\UsuarioDTO;
 use App\Core\Database\Converter;
 use Illuminate\Support\Facades\DB;
 use App\Models\Instances\Usuario\Usuario;
@@ -9,7 +10,6 @@ use App\Models\Repository\Pessoa\PessoaRepository;
 use App\Models\Repository\Plano\PlanoUsuarioRepository;
 use App\Exceptions\ActionRepositoryException as Exception;
 use App\Models\Repository\Paciente\PacienteUsuarioRepository;
-use App\Models\Instances\Pessoa\{PessoaFisica, PessoaJuridica, PessoaInterface};
 
 /**
  * class UsuarioRepository
@@ -31,19 +31,17 @@ class UsuarioRepository {
 
 	/**
 	 * Método responsável por cadastrar um novo usuário
-	 * @param  Usuario 				 									$obUsuario 			Dados do novo usuário
-	 * @param  PessoaFisica|PessoaJuridica 			$obPessoa				Dados da pessoa
-	 * @return Usuario
+	 * @param  UsuarioDTO 			$obUsuarioDTO 			Dados do novo usuário
+	 * @return void
 	 */
-	public static function cadastrar(Usuario $obUsuario, PessoaInterface $obPessoa): Usuario {
-		$obUsuario->idPessoa        = $obPessoa->idPessoa;
-		$obUsuario->dataHoraCriacao = now()->format('Y-m-d H:i:s');
+	public static function cadastrar(UsuarioDTO &$obUsuarioDTO): void {
+		$obUsuarioDTO->usuario->idPessoa        = $obUsuarioDTO->pessoa->idPessoa;
+		$obUsuarioDTO->usuario->dataHoraCriacao = now()->format('Y-m-d H:i:s');
 
 		// REALIZA O CADASTRO
-		$obUsuario->id = DB::table(Usuario::NOME_TABELA)->insertGetId(
-			(new Converter($obUsuario))->objectToArrayDb()
+		$obUsuarioDTO->usuario->id = DB::table(Usuario::NOME_TABELA)->insertGetId(
+			(new Converter($obUsuarioDTO->usuario))->objectToArrayDb()
 		);
-		return $obUsuario;
 	}
 
 	/**

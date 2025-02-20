@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Usuario;
 
+use App\Exceptions\ApiValidationException;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use App\Models\Repository\Usuario\UsuarioRepository;
 
 /**
  * class AlterarRequest
@@ -17,6 +18,14 @@ class AlterarRequest extends FormRequest {
 	 * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
 	 */
 	public function rules(): array {
+		$idUsuario = $this->route('id');
+		if(!is_numeric($idUsuario)) $idUsuario = 0;
+		if(!UsuarioRepository::usuarioExiste($idUsuario)) {
+			throw new ApiValidationException(
+				message: "O usuário informado não foi encontrado!", code: 404
+			);
+		}
+
 		return [
 			'ativo' => [ 'boolean' ],
 			'icone' => [ 'string', 'min:1', 'max:50' ]
