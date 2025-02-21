@@ -15,6 +15,7 @@ return new class extends Migration
 			$table->unsignedBigInteger('id_usuario_pai');
 			$table->unsignedBigInteger('id_usuario_filho');
 
+			$table->primary(['id_usuario_pai', 'id_usuario_filho'], 'id_usuario_responsavel');
 			$table->foreign('id_usuario_pai')->references('id')->on('usuario');
 			$table->foreign('id_usuario_filho')->references('id')->on('usuario');
 		});

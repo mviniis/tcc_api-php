@@ -15,6 +15,7 @@ return new class extends Migration
 			$table->unsignedBigInteger('id_usuario');
 			$table->unsignedBigInteger('id_paciente');
 
+			$table->primary(['id_usuario', 'id_paciente'], 'id_paciente_usuario');
 			$table->foreign('id_usuario')->references('id')->on('usuario');
 			$table->foreign('id_paciente')->references('id')->on('paciente');
 		});

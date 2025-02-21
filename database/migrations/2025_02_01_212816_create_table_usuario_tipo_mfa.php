@@ -17,6 +17,7 @@ return new class extends Migration
 			$table->string('codigo_verificacao', 50)->index('codigo_verificacao');
 			$table->dateTime('data_hora_expirar')->index('data_hora_expirar');
 
+			$table->primary(['id_usuario', 'id_tipo_mfa'], 'id_usuario_tipo_mfa');
 			$table->foreign('id_usuario')->references('id')->on('usuario');
 			$table->foreign('id_tipo_mfa')->references('id')->on('tipo_mfa');
 		});
