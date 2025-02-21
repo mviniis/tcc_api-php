@@ -2,6 +2,7 @@
 
 namespace App\Models\Repository\Usuario;
 
+use App\Core\Database\Converter;
 use Illuminate\Support\Facades\DB;
 use App\Models\Instances\Usuario\UsuarioResponsavel;
 
@@ -29,5 +30,20 @@ abstract class UsuarioResponsavelRepository {
 		return DB::table(UsuarioResponsavel::NOME_TABELA)
 						 ->where('id_usuario_filho', '=', $idUsuarioFilho)
 						 ->delete();
+	}
+
+	/**
+	 * Método responsável por realizar o vínculo com usuários
+	 * @param  int 			$idUsuarioPai					ID do usuário pai
+	 * @param  int 			$idUsuarioFilho 			ID do usuário filho
+	 * @return bool
+	 */
+	public static function vincularUsuarios(int $idUsuarioPai, int $idUsuarioFilho): bool {
+		$obUsuarioResponsavel                 = new UsuarioResponsavel;
+		$obUsuarioResponsavel->idUsuarioPai   = $idUsuarioPai;
+		$obUsuarioResponsavel->idUsuarioFilho = $idUsuarioFilho;
+
+		$vinculo = (new Converter($obUsuarioResponsavel))->objectToArrayDb();
+		return DB::table(UsuarioResponsavel::NOME_TABELA)->insert($vinculo);
 	}
 }

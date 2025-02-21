@@ -17,6 +17,10 @@ class Perfil implements InstanceInterface {
 
 	public const NOME_TABELA = 'perfil';
 
+	public const ID_ADMINISTRADOR = 1;
+	public const ID_RESPONSAVEL   = 2;
+	public const ID_CUIDADOR      = 3;
+
 	/**
 	 * Método responsável por retornar o mapeamento de campos de dados vindos do banco de dados [campoClasse => campo_tabela]
 	 * @return array

@@ -9,6 +9,7 @@ use App\Models\Instances\Usuario\Usuario;
 use App\Models\Repository\Pessoa\PessoaRepository;
 use App\Models\Repository\Usuario\UsuarioRepository;
 use App\Exceptions\ActionRepositoryException as Exception;
+use App\Models\Repository\Usuario\UsuarioResponsavelRepository;
 
 /**
  * class UsuarioFacades
@@ -32,6 +33,38 @@ abstract class UsuarioFacade {
 		if(!$sucesso) throw new Exception($erro, $code);
 
 		return $obUsuarioCadastro;
+	}
+
+	/**
+	 * Método responsável por realizar o cadastro de um novo cuidador
+	 * @param  array 			$dadosCadastro 			Dados do novo cuidador
+	 * @return UsuarioDTO
+	 */
+	public static function novoCuidador(array $dadosCadastro): UsuarioDTO {
+		$obUsuarioDTO = self::novoUsuario($dadosCadastro);
+
+		// MODIFICAÇÃO TEMPORÁRIA - AQUI DEVERÁ SER IMPLEMENTADA A LÓGICA PARA VINCULAR O USUÁRIO LOGADO
+		$idUsuarioPai = 1;
+
+		// REALIZA O VÍNCULO DO USUÁRIO CRIADO COM O USUÁRIO LOGADO
+		self::vincularUsuarios($idUsuarioPai, $obUsuarioDTO->usuario->id);
+
+		return $obUsuarioDTO;
+	}
+
+	/**
+	 * Método responsável por implementar a atualização de um cuidador
+	 * @param  array 			$dadosAtualizar 			Dados do cuidador que serão atualizados
+	 * @return array
+	 */
+	public static function atualizarCuidador(array $dadosAtualizar): array {
+		$dados = self::atualizarUsuario($dadosAtualizar);
+
+		// BUSCA O ID DO PERFIL DO USUÁRIO
+		$obUsuario         = UsuarioRepository::getUsuarioPorId($dados['id'], ['id_perfil']);
+		$dados['idPerfil'] = $obUsuario->idPerfil;
+
+		return $dados;
 	}
 
 	/**
@@ -207,5 +240,15 @@ abstract class UsuarioFacade {
 			$code = $th->getCode();
 			return false;
 		}
+	}
+
+	/**
+	 * Método responsável por implementar o cadastro de vínculos entre usuários
+	 * @param  int 			$idUsuarioPai					ID do usuário pai
+	 * @param  int 			$idUsuarioFilho 			ID do usuário filho
+	 * @return bool
+	 */
+	private static function vincularUsuarios(int $idUsuarioPai, int $idUsuarioFilho) {
+		return UsuarioResponsavelRepository::vincularUsuarios($idUsuarioPai, $idUsuarioFilho);
 	}
 }
